@@ -29,5 +29,5 @@ jobs:
       with:
         push: true
         tags: |
-          ${{ github.repository_owner }}/${{ github.repository }}:latest
-          ${{ github.repository_owner }}/${{ github.repository }}:${{ github.sha }}
+          ${{ github.repository }}:latest
+          ${{ github.repository }}:${{ github.sha }}
