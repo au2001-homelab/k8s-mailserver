@@ -27,9 +27,10 @@ KEY_FILE=/tls/server.key
 if [[ -f "${CRT_FILE}" && -f "${KEY_FILE}" ]]; then
   postconf -e smtp_tls_security_level=may
   postconf -e smtpd_tls_security_level=may
-  postconf -e smtpd_tls_wrappermode=yes
   postconf -e smtpd_tls_cert_file=${CRT_FILE}
   postconf -e smtpd_tls_key_file=${KEY_FILE}
+
+  postconf -Me smtps/inet="smtps inet n - - - - smtpd -o smtpd_tls_wrappermode=yes"
 fi
 
 # Dovecot
