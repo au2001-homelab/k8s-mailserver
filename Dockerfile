@@ -8,7 +8,7 @@ RUN rm -rf /etc/apk/cache
 RUN mkdir -p /etc/sasl2
 RUN mkdir -p /tls
 
-RUN adduser -h /var/spool/mail/vhosts -s /sbin/nologin -D emailuser
+RUN adduser -G root -h /var/spool/mail/vhosts -s /sbin/nologin -D emailuser
 
 COPY ./supervisord.conf /etc/supervisor/conf.d/
 COPY ./sasl.conf /etc/postfix/sasl/smtpd.conf
