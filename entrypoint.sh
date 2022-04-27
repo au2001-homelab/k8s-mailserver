@@ -39,10 +39,10 @@ fi
 postconf -e smtpd_sasl_type=dovecot
 postconf -e smtpd_sasl_path=private/auth
 
-HASHED_PASSWD=`mkpasswd -m sha-512 "${SMTP_PASSWORD}" "${SMTP_USERNAME}@${MAIL_DOMAIN}"`
+CRYPT_PASSWD=`doveadm pw -p "${SMTP_PASSWORD}"`
 
 cat > /etc/dovecot/passwd <<EOF
-${SMTP_USERNAME}@${MAIL_DOMAIN}:${HASHED_PASSWD}:1000:1000::::
+${SMTP_USERNAME}@${MAIL_DOMAIN}:${CRYPT_PASSWD}:1000:1000::::
 EOF
 
 # IMAP TLS
