@@ -25,11 +25,11 @@ CRT_FILE=/tls/server.crt
 KEY_FILE=/tls/server.key
 
 if [[ -f "${CRT_FILE}" && -f "${KEY_FILE}" ]]; then
-  postconf -e smtpd_use_tls=yes
+  postconf -e smtp_tls_security_level=may
+  postconf -e smtpd_tls_security_level=may
+  postconf -e smtpd_tls_wrappermode=yes
   postconf -e smtpd_tls_cert_file=${CRT_FILE}
   postconf -e smtpd_tls_key_file=${KEY_FILE}
-  postconf -e smtpd_tls_security_level=may
-  postconf -e smtp_tls_security_level=may
 fi
 
 # Dovecot
