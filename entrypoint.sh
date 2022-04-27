@@ -11,7 +11,7 @@ SMTP_PASSWORD=${SMTP_PASSWORD:=Password123}
 
 postconf -e myhostname=${MAIL_HOST}
 postconf -e myorigin=${MAIL_DOMAIN}
-postconf -e maillog_file=/var/log/mail.log
+postconf -e maillog_file=/dev/stdout
 
 # SASL
 
@@ -19,26 +19,45 @@ postconf -e smtpd_sasl_auth_enable=yes
 postconf -e broken_sasl_auth_clients=yes
 postconf -e smtpd_recipient_restrictions=permit_sasl_authenticated,reject_unauth_destination
 
-echo "${SMTP_PASSWORD}" | saslpasswd2 -pcu "${MAIL_HOST}" "${SMTP_USERNAME}"
-chown postfix /etc/sasl2/sasldb2
+# SMTP TLS
 
-# TLS
-
-CRT_FILE=/etc/postfix/certs/${MAIL_HOST}.crt
-KEY_FILE=/etc/postfix/certs/${MAIL_HOST}.key
+CRT_FILE=/tls/server.crt
+KEY_FILE=/tls/server.key
 
 if [[ -f "${CRT_FILE}" && -f "${KEY_FILE}" ]]; then
   postconf -e smtpd_use_tls=yes
   postconf -e smtpd_enforce_tls=yes
+  postconf -e smtpd_tls_wrappermode=no
   postconf -e smtpd_tls_cert_file=${CRT_FILE}
   postconf -e smtpd_tls_key_file=${KEY_FILE}
-  postconf -e smtpd_tls_security_level=may
-  postconf -e smtp_tls_security_level=may
+  postconf -e smtpd_tls_security_level=encrypt
+  postconf -e smtp_tls_security_level=encrypt
+fi
+
+# Dovecot
+
+postconf -e smtpd_sasl_type=dovecot
+postconf -e smtpd_sasl_path=private/auth
+
+HASHED_PASSWD=`mkpasswd -m sha-512 "${SMTP_PASSWORD}" "${SMTP_USERNAME}@${MAIL_DOMAIN}"`
+
+cat > /etc/dovecot/passwd <<EOF
+${SMTP_USERNAME}@${MAIL_DOMAIN}:${HASHED_PASSWD}:1000:1000::::
+EOF
+
+# IMAP TLS
+
+if [[ -f "${CRT_FILE}" && -f "${KEY_FILE}" ]]; then
+  cat >> /etc/dovecot/dovecot.conf <<EOF
+ssl      = required
+ssl_cert = <${CRT_FILE}
+ssl_key  = <${KEY_FILE}
+EOF
 fi
 
 # Custom configuration
 
-if [[ -f "/configure.sh" ]]; then
+if [[ -f /configure.sh ]]; then
   bash /configure.sh
 fi
 

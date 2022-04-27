@@ -2,13 +2,15 @@ FROM alpine:latest
 LABEL maintainer="Aurélien GARNIER <me@arl.sh>"
 
 RUN apk update
-RUN apk add --upgrade supervisor postfix cyrus-sasl cyrus-sasl-login
+RUN apk add --upgrade supervisor postfix dovecot
 RUN rm -rf /etc/apk/cache
 
 RUN mkdir -p /etc/sasl2
+RUN mkdir -p /tls
 
 COPY ./supervisord.conf /etc/supervisor/conf.d/
 COPY ./sasl.conf /etc/postfix/sasl/smtpd.conf
+COPY ./dovecot.conf /etc/dovecot/
 
 COPY ./entrypoint.sh /
 RUN chmod +x /entrypoint.sh
