@@ -20,7 +20,6 @@ postconf -e mailbox_size_limit="0"
 postconf -e maillog_file="/dev/stdout"
 
 postconf -e smtpd_banner="${MAIL_HOST} ESMTP"
-postconf -e smtp_helo_name="${MAIL_DOMAIN}"
 postconf -e smtp_header_checks="regexp:/etc/postfix/header_checks"
 echo "/^Received:/ IGNORE" > /etc/postfix/header_checks
 
