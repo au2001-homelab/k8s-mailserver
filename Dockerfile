@@ -1,7 +1,7 @@
 FROM alpine:latest
 LABEL maintainer="Aurélien GARNIER <me@arl.sh>"
 
-RUN apk add --update --upgrade --no-cache supervisor postfix dovecot dovecot-pop3d dovecot-lmtpd opendkim opendkim-utils
+RUN apk add --update --upgrade --no-cache supervisor postfix dovecot dovecot-pop3d dovecot-lmtpd opendkim
 RUN rm -rf /etc/apk/cache
 
 RUN mkdir -p /etc/sasl2

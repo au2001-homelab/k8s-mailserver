@@ -73,20 +73,8 @@ postconf -e smtpd_milters="unix:private/opendkim"
 postconf -e non_smtpd_milters="unix:private/opendkim"
 postconf -e milter_default_action="accept"
 
-DKIM_KEY_FILE="/etc/opendkim/keys/${MAIL_DOMAIN}/default.private"
-DKIM_KEY_DIR=`dirname "${DKIM_KEY_FILE}"`
-DKIM_TXT_FILE="${DKIM_KEY_DIR}/default.txt"
-if [[ ! -f "${DKIM_KEY_FILE}" ]]; then
-  mkdir -p "${DKIM_KEY_DIR}"
-  opendkim-genkey -d "${MAIL_DOMAIN}" -D "${DKIM_KEY_DIR}"
-fi
-
-if [[ -f "${DKIM_TXT_FILE}" ]]; then
-  cat "${DKIM_TXT_FILE}"
-fi
-
 echo > /etc/opendkim/KeyTable <<EOF
-default._domainkey.${MAIL_DOMAIN} ${MAIL_DOMAIN}:default:${DKIM_KEY_FILE}
+default._domainkey.${MAIL_DOMAIN} ${MAIL_DOMAIN}:default:/etc/opendkim/keys/${MAIL_DOMAIN}/default.private
 EOF
 
 echo > /etc/opendkim/SigningTable <<EOF
