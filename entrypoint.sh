@@ -18,7 +18,11 @@ postconf -e smtpd_recipient_restrictions="permit_mynetworks, permit_sasl_authent
 
 postconf -e mailbox_size_limit="0"
 postconf -e maillog_file="/dev/stdout"
+
 postconf -e smtpd_banner="${MAIL_HOST} ESMTP"
+postconf -e smtp_helo_name="${MAIL_DOMAIN}"
+postconf -e smtp_header_checks="regexp:/etc/postfix/header_checks"
+echo "/^Received:/ IGNORE" > /etc/postfix/header_checks
 
 postconf -e virtual_alias_maps="lmdb:/etc/postfix/aliases"
 echo "@${MAIL_DOMAIN} ${USERNAME}@${MAIL_DOMAIN}" > /etc/postfix/aliases
