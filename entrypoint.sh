@@ -26,14 +26,14 @@ postmap lmdb:/etc/postfix/aliases
 
 # SMTP TLS
 
-CRT_FILE=/tls/server.crt
-KEY_FILE=/tls/server.key
+TLS_CRT_FILE=/tls/server.crt
+TLS_KEY_FILE=/tls/server.key
 
-if [[ -f "${CRT_FILE}" && -f "${KEY_FILE}" ]]; then
+if [[ -f "${TLS_CRT_FILE}" && -f "${TLS_KEY_FILE}" ]]; then
   postconf -e smtp_tls_security_level=may
   postconf -e smtpd_tls_security_level=may
-  postconf -e smtpd_tls_cert_file=${CRT_FILE}
-  postconf -e smtpd_tls_key_file=${KEY_FILE}
+  postconf -e smtpd_tls_cert_file=${TLS_CRT_FILE}
+  postconf -e smtpd_tls_key_file=${TLS_KEY_FILE}
 
   postconf -Me smtps/inet="smtps inet n - - - - smtpd -o smtpd_tls_wrappermode=yes"
 fi
@@ -55,17 +55,49 @@ EOF
 
 # IMAP TLS
 
-if [[ -f "${CRT_FILE}" && -f "${KEY_FILE}" ]]; then
+if [[ -f "${TLS_CRT_FILE}" && -f "${TLS_KEY_FILE}" ]]; then
   cat >> /etc/dovecot/dovecot.conf <<EOF
 ssl      = required
-ssl_cert = <${CRT_FILE}
-ssl_key  = <${KEY_FILE}
+ssl_cert = <${TLS_CRT_FILE}
+ssl_key  = <${TLS_KEY_FILE}
 EOF
 else
   cat >> /etc/dovecot/dovecot.conf <<EOF
 ssl = no
 EOF
 fi
+
+# DKIM
+
+postconf -e smtpd_milters="unix:private/opendkim"
+postconf -e non_smtpd_milters="unix:private/opendkim"
+postconf -e milter_default_action="accept"
+
+DKIM_KEY_FILE="/etc/opendkim/keys/${MAIL_DOMAIN}/default.private"
+DKIM_KEY_DIR=`dirname "${DKIM_KEY_FILE}"`
+DKIM_TXT_FILE="${DKIM_KEY_DIR}/default.txt"
+if [[ ! -f "${DKIM_KEY_FILE}" ]]; then
+  mkdir -p "${DKIM_KEY_DIR}"
+  opendkim-genkey -d "${MAIL_DOMAIN}" -D "${DKIM_KEY_DIR}"
+fi
+
+if [[ -f "${DKIM_TXT_FILE}" ]]; then
+  cat "${DKIM_TXT_FILE}"
+fi
+
+echo > /etc/opendkim/KeyTable <<EOF
+default._domainkey.${MAIL_DOMAIN} ${MAIL_DOMAIN}:default:${DKIM_KEY_FILE}
+EOF
+
+echo > /etc/opendkim/SigningTable <<EOF
+*@${MAIL_DOMAIN} default._domainkey.${MAIL_DOMAIN}
+EOF
+
+echo > /etc/opendkim/TrustedHosts <<EOF
+127.0.0.1
+localhost
+${MAIL_DOMAIN}
+EOF
 
 # Custom configuration
 
