@@ -27,8 +27,6 @@ postconf -e virtual_alias_maps="lmdb:/etc/postfix/aliases"
 echo "@${MAIL_DOMAIN} ${USERNAME}@${MAIL_DOMAIN}" > /etc/postfix/aliases
 postmap lmdb:/etc/postfix/aliases
 
-postconf -F "*/*/unprivileged"="n"
-
 # SMTP TLS
 
 TLS_CRT_FILE=/tls/server.crt
@@ -40,7 +38,7 @@ if [[ -f "${TLS_CRT_FILE}" && -f "${TLS_KEY_FILE}" ]]; then
   postconf -e smtpd_tls_cert_file=${TLS_CRT_FILE}
   postconf -e smtpd_tls_key_file=${TLS_KEY_FILE}
 
-  postconf -Me smtps/inet="smtps inet n n - - - smtpd -o smtpd_tls_wrappermode=yes"
+  postconf -Me smtps/inet="smtps inet n - - - - smtpd -o smtpd_tls_wrappermode=yes"
 fi
 
 # Dovecot
@@ -74,8 +72,8 @@ fi
 
 # DKIM
 
-postconf -e smtpd_milters="unix:private/opendkim"
-postconf -e non_smtpd_milters="unix:private/opendkim"
+postconf -e smtpd_milters="inet:localhost:8891"
+postconf -e non_smtpd_milters="inet:localhost:8891"
 postconf -e milter_default_action="accept"
 
 cat > /etc/opendkim/KeyTable <<EOF
