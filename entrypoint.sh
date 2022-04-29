@@ -21,7 +21,10 @@ postconf -e maillog_file="/dev/stdout"
 
 postconf -e smtpd_banner="${MAIL_HOST} ESMTP"
 postconf -e smtp_header_checks="regexp:/etc/postfix/header_checks"
-echo "/^Received:/ IGNORE" > /etc/postfix/header_checks
+cat > /etc/postfix/header_checks <<EOF
+/^Received:/ IGNORE
+/^From:/     PREPEND List-Unsubscribe: <mailto:unsubscribe@${MAIL_DOMAIN}>
+EOF
 
 postconf -e virtual_alias_maps="lmdb:/etc/postfix/aliases"
 echo "@${MAIL_DOMAIN} ${USERNAME}@${MAIL_DOMAIN}" > /etc/postfix/aliases
