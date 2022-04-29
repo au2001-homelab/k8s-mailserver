@@ -72,8 +72,8 @@ fi
 
 # DKIM
 
-postconf -e smtpd_milters="inet:localhost:8891"
-postconf -e non_smtpd_milters="inet:localhost:8891"
+postconf -e smtpd_milters="unix:private/opendkim"
+postconf -e non_smtpd_milters="unix:private/opendkim"
 postconf -e milter_default_action="accept"
 
 cat > /etc/opendkim/KeyTable <<EOF
