@@ -76,15 +76,15 @@ postconf -e smtpd_milters="unix:private/opendkim"
 postconf -e non_smtpd_milters="unix:private/opendkim"
 postconf -e milter_default_action="accept"
 
-echo > /etc/opendkim/KeyTable <<EOF
+cat > /etc/opendkim/KeyTable <<EOF
 default._domainkey.${MAIL_DOMAIN} ${MAIL_DOMAIN}:default:/etc/opendkim/keys/${MAIL_DOMAIN}/default.private
 EOF
 
-echo > /etc/opendkim/SigningTable <<EOF
+cat > /etc/opendkim/SigningTable <<EOF
 *@${MAIL_DOMAIN} default._domainkey.${MAIL_DOMAIN}
 EOF
 
-echo > /etc/opendkim/TrustedHosts <<EOF
+cat > /etc/opendkim/TrustedHosts <<EOF
 127.0.0.1
 localhost
 ${MAIL_DOMAIN}
