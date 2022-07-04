@@ -15,7 +15,7 @@ postconf -e mydestination=""
 postconf -e virtual_mailbox_domains="${MAIL_DOMAIN}"
 
 # postconf -e smtpd_recipient_restrictions="permit_mynetworks, permit_sasl_authenticated, reject_unknown_client_hostname, reject_unauth_destination, check_policy_service unix:private/policyd-spf"
-postconf -e smtpd_recipient_restrictions="permit_mynetworks, permit_sasl_authenticated, reject_unauth_destination, check_policy_service unix:private/policyd-spf, permit"
+postconf -e smtpd_recipient_restrictions="permit_mynetworks, permit_sasl_authenticated, reject_unauth_destination, permit"
 postconf -e smtpd_helo_required="yes"
 postconf -e smtpd_helo_restrictions="permit_mynetworks, permit_sasl_authenticated, reject_invalid_helo_hostname, reject_non_fqdn_helo_hostname, permit"
 
@@ -78,8 +78,8 @@ fi
 
 # DKIM
 
-postconf -e smtpd_milters="unix:private/opendkim,unix:private/opendmarc"
-postconf -e non_smtpd_milters="unix:private/opendkim,unix:private/opendmarc"
+postconf -e smtpd_milters="unix:private/opendkim"
+postconf -e non_smtpd_milters="unix:private/opendkim"
 postconf -e milter_default_action="accept"
 
 cat > /etc/opendkim/KeyTable <<EOF
@@ -100,6 +100,8 @@ EOF
 
 postconf -Me policyd-spf/unix="policyd-spf unix - n n - - spawn user=policyd-spf argv=/usr/bin/postfix-policyd-spf-perl"
 postconf -e policyd-spf_time_limit="3600"
+postconf -e smtpd_milters="$(postconf -ph smtpd_milters),unix:private/opendmarc"
+postconf -e non_smtpd_milters="$(postconf -ph non_smtpd_milters),unix:private/opendmarc"
 
 # DMARC
 
@@ -113,6 +115,31 @@ SPFSelfValidate            true
 Socket                     unix:/var/spool/postfix/private/opendmarc
 UMask                      0660
 UserID                     root:postfix
+EOF
+
+# Rspamd
+
+postconf -e smtpd_milters="$(postconf -ph smtpd_milters),unix:private/rspamd"
+postconf -e non_smtpd_milters="$(postconf -ph non_smtpd_milters),unix:private/rspamd"
+
+cat > /etc/rspamd/local.d/worker-normal.inc <<EOF
+enabled = false;
+EOF
+
+cat > /etc/rspamd/local.d/worker-proxy.inc <<EOF
+milter  = yes;
+timeout = 120s;
+
+upstream "local" {
+  default   = yes;
+  self_scan = yes;
+}
+
+bind_socket = "/var/spool/postfix/private/rspamd mode=0660 owner=_rspamd group=postfix";
+EOF
+
+cat > /etc/rspamd/local.d/options.inc <<EOF
+local_networks = "127.0.0.0/8, ::1/128";
 EOF
 
 # Custom configuration
