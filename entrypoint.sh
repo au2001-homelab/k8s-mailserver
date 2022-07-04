@@ -150,7 +150,8 @@ bind_socket = "/var/spool/postfix/private/rspamd mode=0660 owner=rspamd group=po
 EOF
 
 cat > /etc/rspamd/local.d/options.inc <<EOF
-local_networks = "127.0.0.0/8, ::1/128";
+disable_hyperscan = yes;
+local_networks    = "127.0.0.0/8, ::1/128";
 EOF
 
 mkdir -p /var/lib/dovecot/sieve/global
