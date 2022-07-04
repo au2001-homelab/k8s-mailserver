@@ -7,7 +7,7 @@ RUN apk add --update --upgrade --no-cache dovecot dovecot-pop3d dovecot-lmtpd
 RUN apk add --update --upgrade --no-cache postfix-policyd-spf-perl
 RUN apk add --update --upgrade --no-cache opendkim
 RUN apk add --update --upgrade --no-cache opendmarc
-RUN apk add --update --upgrade --no-cache rspamd dovecot-sieve
+RUN apk add --update --upgrade --no-cache rspamd dovecot-pigeonhole-plugin
 RUN rm -rf /etc/apk/cache
 
 RUN mkdir -p /etc/sasl2
