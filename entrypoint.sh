@@ -129,7 +129,8 @@ postconf -e smtpd_milters="$(postconf -ph smtpd_milters),unix:private/rspamd"
 postconf -e non_smtpd_milters="$(postconf -ph non_smtpd_milters),unix:private/rspamd"
 
 cat > /etc/rspamd/local.d/logging.inc <<EOF
-type = console;
+type  = console;
+level = debug;
 EOF
 
 cat > /etc/rspamd/local.d/worker-normal.inc <<EOF
