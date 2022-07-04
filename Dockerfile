@@ -18,6 +18,8 @@ COPY ./dovecot.conf /etc/dovecot/
 COPY ./opendkim.conf /etc/opendkim/
 COPY ./syslog-ng.conf /etc/syslog-ng/
 
+RUN adduser -h /var/spool/postfix/policyd-spf -s /sbin/nologin -D policyd-spf
+
 COPY ./entrypoint.sh /
 RUN chmod +x /entrypoint.sh
 ENTRYPOINT ["/entrypoint.sh"]
