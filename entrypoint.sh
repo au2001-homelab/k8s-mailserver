@@ -48,6 +48,12 @@ cat > /etc/dovecot/passwd <<EOF
 ${USERNAME}@${MAIL_DOMAIN}:${CRYPT_PASSWORD}
 EOF
 
+cat > /etc/dovecot/conf.d/90-sieve.conf <<EOF
+plugin {
+  sieve_global = /var/lib/dovecot/sieve/global
+}
+EOF
+
 # SMTP TLS
 
 TLS_CRT_FILE=/tls/server.crt
@@ -135,12 +141,23 @@ upstream "local" {
   self_scan = yes;
 }
 
-bind_socket = "/var/spool/postfix/private/rspamd mode=0660 owner=_rspamd group=postfix";
+bind_socket = "/var/spool/postfix/private/rspamd mode=0660 owner=rspamd group=postfix";
 EOF
 
 cat > /etc/rspamd/local.d/options.inc <<EOF
 local_networks = "127.0.0.0/8, ::1/128";
 EOF
+
+mkdir -p /var/lib/dovecot/sieve/global
+cat > /var/lib/dovecot/sieve/global/rspamd.sieve <<EOF
+require ["fileinto"];
+
+if header :is "X-Spam" "Yes" {
+  fileinto "Junk";
+}
+EOF
+
+sievec /var/lib/dovecot/sieve/global/
 
 # Custom configuration
 
