@@ -1,9 +1,12 @@
 FROM alpine:latest
 LABEL maintainer="Aurélien GARNIER <me@arl.sh>"
 
-RUN apk add --update --upgrade --no-cache supervisor postfix
+RUN apk add --update --upgrade --no-cache supervisor syslog-ng
+RUN apk add --update --upgrade --no-cache postfix
 RUN apk add --update --upgrade --no-cache dovecot dovecot-pop3d dovecot-lmtpd
-RUN apk add --update --upgrade --no-cache opendkim syslog-ng
+RUN apk add --update --upgrade --no-cache postfix-policyd-spf-perl
+RUN apk add --update --upgrade --no-cache opendkim
+RUN apk add --update --upgrade --no-cache opendmarc
 RUN rm -rf /etc/apk/cache
 
 RUN mkdir -p /etc/sasl2
