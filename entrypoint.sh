@@ -98,7 +98,7 @@ EOF
 
 # SPF
 
-postconf -Me policyd-spf/unix="policyd-spf unix - n n - - /usr/sbin/postfix-policyd-spf-perl"
+postconf -Me policyd-spf/unix="policyd-spf unix - n n - - spawn /usr/sbin/postfix-policyd-spf-perl"
 postconf -e policyd-spf_time_limit="3600"
 
 # DMARC
