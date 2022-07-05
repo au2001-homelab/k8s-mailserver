@@ -125,12 +125,11 @@ EOF
 
 # Rspamd
 
-postconf -e smtpd_milters="$(postconf -ph smtpd_milters),unix:private/rspamd"
-postconf -e non_smtpd_milters="$(postconf -ph non_smtpd_milters),unix:private/rspamd"
+# postconf -e smtpd_milters="$(postconf -ph smtpd_milters),unix:private/rspamd"
+# postconf -e non_smtpd_milters="$(postconf -ph non_smtpd_milters),unix:private/rspamd"
 
 cat > /etc/rspamd/local.d/logging.inc <<EOF
-type  = console;
-level = debug;
+type = console;
 EOF
 
 cat > /etc/rspamd/local.d/worker-normal.inc <<EOF
@@ -150,8 +149,7 @@ bind_socket = "/var/spool/postfix/private/rspamd mode=0660 owner=rspamd group=po
 EOF
 
 cat > /etc/rspamd/local.d/options.inc <<EOF
-disable_hyperscan = yes;
-local_networks    = "127.0.0.0/8, ::1/128";
+local_networks = "127.0.0.0/8, ::1/128";
 EOF
 
 mkdir -p /var/lib/dovecot/sieve/global
