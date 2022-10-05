@@ -16,7 +16,7 @@ postconf -e mydestination=""
 postconf -e virtual_mailbox_domains="\$mydomain"
 postconf -e mynetworks="127.0.0.0/8, 10.0.0.0/8"
 
-postconf -e smtpd_recipient_restrictions="permit_mynetworks, permit_sasl_authenticated, reject_non_fqdn_recipient, reject_unknown_client_hostname, reject_unauth_destination, check_policy_service unix:private/policyd-spf, permit"
+postconf -e smtpd_recipient_restrictions="permit_mynetworks, permit_sasl_authenticated, reject_non_fqdn_recipient, reject_unknown_client_hostname, reject_unauth_destination, permit"
 postconf -e smtpd_sender_restrictions="permit_mynetworks, permit_sasl_authenticated, reject_non_fqdn_sender, reject_unknown_client_hostname, permit"
 postconf -e smtpd_helo_required="yes"
 postconf -e smtpd_helo_restrictions="permit_mynetworks, permit_sasl_authenticated, reject_invalid_helo_hostname, reject_non_fqdn_helo_hostname, reject_unknown_helo_hostname, reject_unknown_client_hostname, permit"
@@ -87,7 +87,7 @@ fi
 # DKIM
 
 postconf -e smtpd_milters="unix:private/opendkim"
-postconf -e non_smtpd_milters="unix:private/opendkim"
+postconf -e non_smtpd_milters="\$smtpd_milters"
 postconf -e milter_default_action="accept"
 
 cat > /etc/opendkim/KeyTable <<EOF
@@ -104,34 +104,29 @@ localhost
 ${MAIL_DOMAIN}
 EOF
 
-# SPF
-
-postconf -Me policyd-spf/unix="policyd-spf unix - n n - - spawn user=policyd-spf argv=/usr/bin/postfix-policyd-spf-perl"
-postconf -e policyd-spf_time_limit="3600"
-postconf -e smtpd_milters="$(postconf -ph smtpd_milters),unix:private/opendmarc"
-postconf -e non_smtpd_milters="$(postconf -ph non_smtpd_milters),unix:private/opendmarc"
-
-mkdir -p /var/lib/dovecot/sieve/global
-cat > /var/lib/dovecot/sieve/global/spf.sieve <<EOF
-require ["fileinto"];
-
-if header :is "Received-SPF" "softfail" {
-  fileinto "Junk";
-}
-EOF
-
 # DMARC
+
+postconf -e smtpd_milters="$(postconf -ph smtpd_milters),unix:private/opendmarc"
 
 cat > /etc/opendmarc.conf <<EOF
 AuthservID                 OpenDMARC
 TrustedAuthservIDs         ${MAIL_HOST}
-RejectFailures             true
 IgnoreAuthenticatedClients true
 RequiredHeaders            true
+SPFIgnoreResults           true
 SPFSelfValidate            true
 Socket                     unix:/var/spool/postfix/private/opendmarc
 UMask                      0660
 UserID                     root:postfix
+EOF
+
+mkdir -p /var/lib/dovecot/sieve/global
+cat > /var/lib/dovecot/sieve/global/opendmarc.sieve <<EOF
+require ["fileinto"];
+
+if header :is "Authentication-Results" "OpenDMARC; dmarc=fail" {
+  fileinto "Junk";
+}
 EOF
 
 # Proxy Protocol
