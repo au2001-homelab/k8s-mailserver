@@ -14,7 +14,7 @@ postconf -e mydomain="${MAIL_DOMAIN}"
 postconf -e myorigin="\$mydomain"
 postconf -e mydestination=""
 postconf -e virtual_mailbox_domains="\$mydomain"
-postconf -e mynetworks="127.0.0.0/8, ::1/128, 10.0.0.0/8"
+postconf -e mynetworks="127.0.0.0/8, [::1]/128, 10.0.0.0/8"
 
 postconf -e smtpd_recipient_restrictions="permit_mynetworks, permit_sasl_authenticated, reject_non_fqdn_recipient, reject_unknown_client_hostname, reject_unauth_destination, permit"
 postconf -e smtpd_sender_restrictions="permit_mynetworks, permit_sasl_authenticated, reject_non_fqdn_sender, reject_unknown_client_hostname, permit"
