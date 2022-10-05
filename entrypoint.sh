@@ -130,10 +130,7 @@ mkdir -p /var/lib/dovecot/sieve/global
 cat > /var/lib/dovecot/sieve/global/test.sieve <<EOF
 require ["fileinto"];
 
-if header :contains "From" "@" {
-  fileinto "Test";
-  stop;
-}
+fileinto "Test";
 EOF
 
 cat > /var/lib/dovecot/sieve/global/opendmarc.sieve <<EOF
