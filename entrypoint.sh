@@ -198,4 +198,6 @@ if [[ -f /configure.sh ]]; then
   bash /configure.sh
 fi
 
+doveconf -nP > /etc/dovecot/dovecot.conf
+
 exec "$@"
