@@ -14,7 +14,7 @@ postconf -e mydomain="${MAIL_DOMAIN}"
 postconf -e myorigin="\$mydomain"
 postconf -e mydestination=""
 postconf -e virtual_mailbox_domains="\$mydomain"
-postconf -e mynetworks="127.0.0.0/8, 10.0.0.0/8"
+postconf -e mynetworks="127.0.0.0/8, ::1/128, 10.0.0.0/8"
 
 postconf -e smtpd_recipient_restrictions="permit_mynetworks, permit_sasl_authenticated, reject_non_fqdn_recipient, reject_unknown_client_hostname, reject_unauth_destination, permit"
 postconf -e smtpd_sender_restrictions="permit_mynetworks, permit_sasl_authenticated, reject_non_fqdn_sender, reject_unknown_client_hostname, permit"
@@ -109,7 +109,7 @@ EOF
 postconf -e smtpd_milters="$(postconf -ph smtpd_milters),unix:private/opendmarc"
 
 cat > /etc/opendmarc.conf <<EOF
-AuthservID                 OpenDMARC
+AuthservID                 ${MAIL_HOST}
 TrustedAuthservIDs         ${MAIL_HOST}
 IgnoreAuthenticatedClients true
 RequiredHeaders            true
@@ -124,8 +124,9 @@ mkdir -p /var/lib/dovecot/sieve/global
 cat > /var/lib/dovecot/sieve/global/opendmarc.sieve <<EOF
 require ["fileinto"];
 
-if header :is "Authentication-Results" "OpenDMARC; dmarc=fail" {
-  fileinto "Junk";
+if header :matches "Authentication-Results" "${MAIL_HOST}; dmarc=fail *" {
+  fileinto "Spam";
+  stop;
 }
 EOF
 
@@ -165,14 +166,15 @@ bind_socket = "/var/spool/postfix/private/rspamd mode=0660 owner=rspamd group=po
 EOF
 
 cat > /etc/rspamd/local.d/options.inc <<EOF
-local_networks = "127.0.0.0/8, ::1/128";
+local_networks = "127.0.0.0/8, ::1/128, 10.0.0.0/8";
 EOF
 
 cat > /var/lib/dovecot/sieve/global/rspamd.sieve <<EOF
 require ["fileinto"];
 
 if header :is "X-Spam" "Yes" {
-  fileinto "Junk";
+  fileinto "Spam";
+  stop;
 }
 EOF
 
