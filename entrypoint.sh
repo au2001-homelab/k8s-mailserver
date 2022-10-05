@@ -16,8 +16,8 @@ postconf -e mydestination=""
 postconf -e virtual_mailbox_domains="\$mydomain"
 postconf -e mynetworks="127.0.0.0/8, 10.0.0.0/8"
 
-# postconf -e smtpd_recipient_restrictions="permit_mynetworks, permit_sasl_authenticated, reject_unknown_client_hostname, reject_unauth_destination, check_policy_service unix:private/policyd-spf"
-postconf -e smtpd_recipient_restrictions="permit_mynetworks, permit_sasl_authenticated, reject_unauth_destination, permit"
+# postconf -e smtpd_recipient_restrictions="permit_mynetworks, permit_sasl_authenticated, reject_unknown_client_hostname, reject_unauth_destination, check_policy_service unix:private/policyd-spf, permit"
+postconf -e smtpd_recipient_restrictions="permit_mynetworks, permit_sasl_authenticated, reject_unauth_destination, check_policy_service unix:private/policyd-spf, permit"
 postconf -e smtpd_helo_required="yes"
 postconf -e smtpd_helo_restrictions="permit_mynetworks, permit_sasl_authenticated, reject_invalid_helo_hostname, reject_non_fqdn_helo_hostname, permit"
 
