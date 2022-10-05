@@ -127,6 +127,15 @@ UserID                     root:postfix
 EOF
 
 mkdir -p /var/lib/dovecot/sieve/global
+cat > /var/lib/dovecot/sieve/global/test.sieve <<EOF
+require ["fileinto"];
+
+if header :contains "From" "@" {
+  fileinto "Test";
+  stop;
+}
+EOF
+
 cat > /var/lib/dovecot/sieve/global/opendmarc.sieve <<EOF
 require ["fileinto"];
 
