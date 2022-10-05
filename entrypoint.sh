@@ -10,9 +10,11 @@ PASSWORD=${PASSWORD:=Password123}
 # Postfix
 
 postconf -e myhostname="${MAIL_HOST}"
-postconf -e myorigin="${MAIL_DOMAIN}"
+postconf -e mydomain="${MAIL_DOMAIN}"
+postconf -e myorigin="\$mydomain"
 postconf -e mydestination=""
-postconf -e virtual_mailbox_domains="${MAIL_DOMAIN}"
+postconf -e virtual_mailbox_domains="\$mydomain"
+postconf -e mynetworks="127.0.0.0/8"
 
 # postconf -e smtpd_recipient_restrictions="permit_mynetworks, permit_sasl_authenticated, reject_unknown_client_hostname, reject_unauth_destination, check_policy_service unix:private/policyd-spf"
 postconf -e smtpd_recipient_restrictions="permit_mynetworks, permit_sasl_authenticated, reject_unauth_destination, permit"
@@ -122,6 +124,14 @@ Socket                     unix:/var/spool/postfix/private/opendmarc
 UMask                      0660
 UserID                     root:postfix
 EOF
+
+# Proxy Protocol
+
+postconf -Me smtp/inet="smtp inet n - - - - postscreen"
+postconf -Me smtpd/pass="smtpd pass - - - - - smtpd"
+
+postconf -e postscreen_upstream_proxy_protocol="haproxy"
+postconf -e postscreen_access_list="10.0.0.0/8"
 
 # Rspamd
 
