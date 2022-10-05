@@ -127,7 +127,9 @@ EOF
 
 # Proxy Protocol
 
-postconf -Me smtp/inet="smtp inet n - - - 1 postscreen"
+postconf -M# smtp/inet
+postconf -M# smtps/inet
+postconf -Me 10025/inet="10025 inet n - - - 1 postscreen"
 postconf -Me smtpd/pass="smtpd pass - - - - - smtpd"
 
 postconf -e postscreen_upstream_proxy_protocol="haproxy"
