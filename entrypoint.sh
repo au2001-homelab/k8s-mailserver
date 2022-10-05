@@ -56,6 +56,12 @@ plugin {
 }
 EOF
 
+cat > /etc/dovecot/conf.d/20-lmtp.conf <<EOF
+protocol lmtp {
+  mail_plugins = \$mail_plugins sieve
+}
+EOF
+
 # SMTP TLS
 
 TLS_CRT_FILE=/tls/server.crt
@@ -124,7 +130,7 @@ mkdir -p /var/lib/dovecot/sieve/global
 cat > /var/lib/dovecot/sieve/global/opendmarc.sieve <<EOF
 require ["fileinto"];
 
-if header :matches "Authentication-Results" "${MAIL_HOST}; dmarc=fail *" {
+if header :matches "Authentication-Results" "*; dmarc=fail *" {
   fileinto "Spam";
   stop;
 }
