@@ -14,7 +14,7 @@ postconf -e mydomain="${MAIL_DOMAIN}"
 postconf -e myorigin="\$mydomain"
 postconf -e mydestination=""
 postconf -e virtual_mailbox_domains="\$mydomain"
-postconf -e mynetworks="127.0.0.0/8"
+postconf -e mynetworks="127.0.0.0/8, 10.0.0.0/8"
 
 # postconf -e smtpd_recipient_restrictions="permit_mynetworks, permit_sasl_authenticated, reject_unknown_client_hostname, reject_unauth_destination, check_policy_service unix:private/policyd-spf"
 postconf -e smtpd_recipient_restrictions="permit_mynetworks, permit_sasl_authenticated, reject_unauth_destination, permit"
@@ -133,7 +133,7 @@ postconf -Me 10025/inet="10025 inet n - - - 1 postscreen"
 postconf -Me smtpd/pass="smtpd pass - - - - - smtpd"
 
 postconf -e postscreen_upstream_proxy_protocol="haproxy"
-postconf -e postscreen_access_list="10.0.0.0/8"
+postconf -e postscreen_access_list="permit_mynetworks"
 
 # Rspamd
 
