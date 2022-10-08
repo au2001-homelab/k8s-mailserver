@@ -17,6 +17,7 @@ COPY ./sasl.conf /etc/postfix/sasl/smtpd.conf
 COPY ./dovecot.conf /etc/dovecot/
 COPY ./opendkim.conf /etc/opendkim/
 COPY ./syslog-ng.conf /etc/syslog-ng/
+COPY ./rspamd.conf /etc/rspamd/rspamd.conf.local
 
 COPY ./entrypoint.sh /
 RUN chmod +x /entrypoint.sh

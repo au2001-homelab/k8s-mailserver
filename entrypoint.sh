@@ -148,18 +148,6 @@ cat > /etc/rspamd/local.d/worker-normal.inc <<EOF
 enabled = false;
 EOF
 
-cat > /etc/rspamd/local.d/worker-proxy.inc <<EOF
-milter  = yes;
-timeout = 120s;
-
-upstream "local" {
-  default   = yes;
-  self_scan = yes;
-}
-
-bind_socket = "localhost:11333";
-EOF
-
 cat > /etc/rspamd/local.d/options.inc <<EOF
 local_networks = "127.0.0.0/8, ::1/128, 10.0.0.0/8";
 EOF
