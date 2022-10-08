@@ -114,14 +114,16 @@ UMask                      0660
 UserID                     root:postfix
 EOF
 
-mkdir -p /var/lib/dovecot/sieve/global
-cat > /var/lib/dovecot/sieve/global/test.sieve <<EOF
+mkdir -p /var/lib/dovecot/sieve/before.d/
+mkdir -p /var/lib/dovecot/sieve/after.d/
+
+cat > /var/lib/dovecot/sieve/after.d/test.sieve <<EOF
 require ["fileinto"];
 
-fileinto "Test";
+fileinto "Spam";
 EOF
 
-cat > /var/lib/dovecot/sieve/global/opendmarc.sieve <<EOF
+cat > /var/lib/dovecot/sieve/after.d/opendmarc.sieve <<EOF
 require ["fileinto"];
 
 if header :matches "Authentication-Results" "*; dmarc=fail *" {
@@ -169,7 +171,7 @@ cat > /etc/rspamd/local.d/options.inc <<EOF
 local_networks = "127.0.0.0/8, ::1/128, 10.0.0.0/8";
 EOF
 
-cat > /var/lib/dovecot/sieve/global/rspamd.sieve <<EOF
+cat > /var/lib/dovecot/sieve/after.d/rspamd.sieve <<EOF
 require ["fileinto"];
 
 if header :is "X-Spam" "Yes" {
@@ -178,7 +180,8 @@ if header :is "X-Spam" "Yes" {
 }
 EOF
 
-sievec /var/lib/dovecot/sieve/global/
+sievec /var/lib/dovecot/sieve/before.d/
+sievec /var/lib/dovecot/sieve/after.d/
 
 # Custom configuration
 
