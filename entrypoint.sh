@@ -117,12 +117,6 @@ EOF
 mkdir -p /var/lib/dovecot/sieve/before.d/
 mkdir -p /var/lib/dovecot/sieve/after.d/
 
-cat > /var/lib/dovecot/sieve/after.d/test.sieve <<EOF
-require ["fileinto"];
-
-fileinto "Spam";
-EOF
-
 cat > /var/lib/dovecot/sieve/after.d/opendmarc.sieve <<EOF
 require ["fileinto"];
 
