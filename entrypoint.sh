@@ -138,7 +138,7 @@ postconf -e postscreen_access_list="permit_mynetworks"
 
 # Rspamd
 
-postconf -e smtpd_milters="$(postconf -ph smtpd_milters),unix:private/rspamd"
+postconf -e smtpd_milters="$(postconf -ph smtpd_milters),inet:localhost:11333"
 
 cat > /etc/rspamd/local.d/logging.inc <<EOF
 type = console;
@@ -157,7 +157,7 @@ upstream "local" {
   self_scan = yes;
 }
 
-bind_socket = "/var/spool/postfix/private/rspamd mode=0660 owner=rspamd group=postfix";
+bind_socket = "localhost:11333";
 EOF
 
 cat > /etc/rspamd/local.d/options.inc <<EOF
