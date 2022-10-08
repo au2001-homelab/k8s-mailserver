@@ -50,18 +50,6 @@ cat > /etc/dovecot/passwd <<EOF
 ${USERNAME}@${MAIL_DOMAIN}:${CRYPT_PASSWORD}
 EOF
 
-cat > /etc/dovecot/conf.d/90-sieve.conf <<EOF
-plugin {
-  sieve_global = /var/lib/dovecot/sieve/global
-}
-EOF
-
-cat > /etc/dovecot/conf.d/20-lmtp.conf <<EOF
-protocol lmtp {
-  mail_plugins = \$mail_plugins sieve
-}
-EOF
-
 # SMTP TLS
 
 TLS_CRT_FILE=/tls/server.crt
