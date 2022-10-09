@@ -138,7 +138,7 @@ postconf -e postscreen_access_list="permit_mynetworks"
 
 # Rspamd
 
-postconf -e smtpd_milters="$(postconf -ph smtpd_milters),inet:localhost:11333"
+postconf -e smtpd_milters="$(postconf -ph smtpd_milters),unix:private/rspamd"
 
 cat > /etc/rspamd/local.d/logging.inc <<EOF
 type = console;
@@ -146,6 +146,18 @@ EOF
 
 cat > /etc/rspamd/local.d/worker-normal.inc <<EOF
 enabled = false;
+EOF
+
+cat > /etc/rspamd/local.d/worker-proxy.inc <<EOF
+milter  = yes;
+timeout = 120s;
+
+upstream "local" {
+  default   = yes;
+  self_scan = yes;
+}
+
+bind_socket = "/var/spool/postfix/private/rspamd mode=0660 owner=rspamd group=postfix";
 EOF
 
 cat > /etc/rspamd/local.d/options.inc <<EOF

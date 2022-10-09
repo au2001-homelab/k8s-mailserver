@@ -4,9 +4,9 @@ LABEL maintainer="Aurélien GARNIER <me@arl.sh>"
 RUN apk add --update --upgrade --no-cache supervisor syslog-ng
 RUN apk add --update --upgrade --no-cache postfix
 RUN apk add --update --upgrade --no-cache dovecot dovecot-pop3d dovecot-lmtpd
-RUN apk add --update --upgrade --no-cache opendkim
-RUN apk add --update --upgrade --no-cache opendmarc
-RUN apk add --update --upgrade --no-cache rspamd dovecot-pigeonhole-plugin
+RUN apk add --update --upgrade --no-cache opendkim opendmarc
+RUN apk add --update --upgrade --no-cache dovecot-pigeonhole-plugin
+RUN apk add --update --upgrade --no-cache rspamd rspamd-proxy
 RUN rm -rf /etc/apk/cache
 
 RUN mkdir -p /etc/sasl2
@@ -17,7 +17,6 @@ COPY ./sasl.conf /etc/postfix/sasl/smtpd.conf
 COPY ./dovecot.conf /etc/dovecot/
 COPY ./opendkim.conf /etc/opendkim/
 COPY ./syslog-ng.conf /etc/syslog-ng/
-COPY ./rspamd.conf /etc/rspamd/rspamd.conf.local
 
 COPY ./entrypoint.sh /
 RUN chmod +x /entrypoint.sh
