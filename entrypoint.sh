@@ -16,10 +16,10 @@ postconf -e mydestination=""
 postconf -e virtual_mailbox_domains="\$mydomain"
 postconf -e mynetworks="127.0.0.0/8, [::1]/128, 10.0.0.0/8"
 
-postconf -e smtpd_recipient_restrictions="permit_mynetworks, permit_sasl_authenticated, reject_non_fqdn_recipient, reject_unknown_client_hostname, reject_unauth_destination, permit"
-postconf -e smtpd_sender_restrictions="permit_mynetworks, permit_sasl_authenticated, reject_non_fqdn_sender, reject_unknown_client_hostname, permit"
+postconf -e smtpd_recipient_restrictions="permit_sasl_authenticated, reject_non_fqdn_recipient, reject_unknown_client_hostname, reject_unauth_destination, permit"
+postconf -e smtpd_sender_restrictions="permit_sasl_authenticated, reject_non_fqdn_sender, reject_unknown_client_hostname, permit"
 postconf -e smtpd_helo_required="yes"
-postconf -e smtpd_helo_restrictions="permit_mynetworks, permit_sasl_authenticated, reject_invalid_helo_hostname, reject_non_fqdn_helo_hostname, reject_unknown_helo_hostname, reject_unknown_client_hostname, permit"
+postconf -e smtpd_helo_restrictions="permit_sasl_authenticated, reject_invalid_helo_hostname, reject_non_fqdn_helo_hostname, reject_unknown_helo_hostname, reject_unknown_client_hostname, permit"
 
 postconf -e mailbox_size_limit="0"
 postconf -e maillog_file="/dev/stdout"
