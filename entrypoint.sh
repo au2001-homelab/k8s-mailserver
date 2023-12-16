@@ -1,19 +1,19 @@
-#!/bin/sh
+#!/bin/bash
 
 # Variables
 
-MAIL_DOMAIN=${MAIL_DOMAIN:=example.com}
-MAIL_HOST=${MAIL_HOST:-$MAIL_DOMAIN}
+MAIL_DOMAINS=(${MAIL_DOMAINS:=example.com})
+MAIL_HOST=${MAIL_HOST:-${MAIL_DOMAINS[0]}}
 USERNAME=${USERNAME:=user}
 PASSWORD=${PASSWORD:=Password123}
 
 # Postfix
 
 postconf -e myhostname="${MAIL_HOST}"
-postconf -e mydomain="${MAIL_DOMAIN}"
+postconf -e mydomain="${MAIL_DOMAINS[0]}"
 postconf -e myorigin="\$mydomain"
 postconf -e mydestination=""
-postconf -e virtual_mailbox_domains="\$mydomain"
+postconf -e virtual_mailbox_domains="${MAIL_DOMAINS[*]}"
 postconf -e mynetworks="127.0.0.0/8, [::1]/128, 10.0.0.0/8"
 
 postconf -e smtpd_recipient_restrictions="permit_sasl_authenticated, reject_non_fqdn_recipient, reject_unknown_client_hostname, reject_unauth_destination, permit"
@@ -30,11 +30,16 @@ postconf -e smtpd_banner="${MAIL_HOST} ESMTP"
 postconf -e smtp_header_checks="regexp:/etc/postfix/header_checks"
 cat > /etc/postfix/header_checks <<EOF
 /^Received:/ IGNORE
-/^From:/     PREPEND List-Unsubscribe: <mailto:unsubscribe@${MAIL_DOMAIN}>
+/^From:/     PREPEND List-Unsubscribe: <mailto:unsubscribe@${MAIL_DOMAINS[0]}>
 EOF
 
 postconf -e virtual_alias_maps="lmdb:/etc/postfix/aliases"
-echo "@${MAIL_DOMAIN} ${USERNAME}@${MAIL_DOMAIN}" > /etc/postfix/aliases
+> /etc/postfix/aliases
+for domain in "${MAIL_DOMAINS[@]}"; do
+  cat >> /etc/postfix/aliases <<EOF
+@${domain} ${USERNAME}@${MAIL_DOMAINS[0]}
+EOF
+done
 postmap lmdb:/etc/postfix/aliases
 
 # Dovecot
@@ -49,7 +54,7 @@ postconf -e smtpd_sasl_path="private/auth"
 CRYPT_PASSWORD=`doveadm pw -p "${PASSWORD}"`
 
 cat > /etc/dovecot/passwd <<EOF
-${USERNAME}@${MAIL_DOMAIN}:${CRYPT_PASSWORD}
+${USERNAME}@${MAIL_DOMAINS[0]}:${CRYPT_PASSWORD}
 EOF
 
 # SMTP TLS
@@ -86,19 +91,24 @@ postconf -e smtpd_milters="unix:private/opendkim"
 postconf -e non_smtpd_milters="\$smtpd_milters"
 postconf -e milter_default_action="accept"
 
-cat > /etc/opendkim/KeyTable <<EOF
-default._domainkey.${MAIL_DOMAIN} ${MAIL_DOMAIN}:default:/etc/opendkim/keys/${MAIL_DOMAIN}/default.private
-EOF
-
-cat > /etc/opendkim/SigningTable <<EOF
-*@${MAIL_DOMAIN} default._domainkey.${MAIL_DOMAIN}
-EOF
-
 cat > /etc/opendkim/TrustedHosts <<EOF
 127.0.0.1
 localhost
-${MAIL_DOMAIN}
 EOF
+
+for domain in "${MAIL_DOMAINS[@]}"; do
+  cat >> /etc/opendkim/KeyTable <<EOF
+default._domainkey.${domain} ${domain}:default:/etc/opendkim/keys/${domain}/default.private
+EOF
+
+  cat >> /etc/opendkim/SigningTable <<EOF
+*@${domain} default._domainkey.${domain}
+EOF
+
+  cat > /etc/opendkim/TrustedHosts <<EOF
+${domain}
+EOF
+done
 
 # DMARC
 

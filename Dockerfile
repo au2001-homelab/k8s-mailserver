@@ -1,6 +1,7 @@
 FROM alpine:latest
 LABEL maintainer="Aurélien GARNIER <me@arl.sh>"
 
+RUN apk add --update --upgrade --no-cache bash
 RUN apk add --update --upgrade --no-cache supervisor syslog-ng
 RUN apk add --update --upgrade --no-cache postfix
 RUN apk add --update --upgrade --no-cache dovecot dovecot-pop3d dovecot-lmtpd
