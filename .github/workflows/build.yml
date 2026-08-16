@@ -1,12 +1,10 @@
 name: Build Docker image
 
-# Releases are cut by pushing a tag such as v1.2.3. Pushes to main rebuild the
-# edge tag only, so that landing a commit never moves the tag a running mail
-# server is pulling: promoting a build is a deliberate act.
+# Versions are minted here, not by hand: nobody tags a release. Every build of
+# the default branch publishes an immutable version naming what is inside it.
 on:
   push:
     branches: main
-    tags: v[0-9]+.[0-9]+.[0-9]+
   # Alpine keeps issuing package fixes for a pinned release, and this image sat
   # unrebuilt for two and a half years. A weekly run keeps edge patched and, as
   # it starts what it builds, says whether the tree still produces a working
@@ -46,19 +44,16 @@ jobs:
         username: ${{ github.repository_owner }}
         password: ${{ github.token }}
 
-    # A release tag publishes the full version, the minor and the major series,
-    # so a deployment can pin as tightly as it wants and still receive patches.
-    # latest follows releases only, never main.
+    # Only the moving pointers. The version itself is a property of what apk
+    # resolved inside the image, which does not exist yet at this point, so it
+    # is minted further down instead.
     - name: Derive image tags
       id: meta
       uses: docker/metadata-action@v6
       with:
         images: ${{ env.CONTAINER_REGISTRY }}/${{ github.repository }}
         tags: |
-          type=semver,pattern={{version}}
-          type=semver,pattern={{major}}.{{minor}}
-          type=semver,pattern={{major}}
-          type=raw,value=latest,enable=${{ startsWith(github.ref, 'refs/tags/v') }}
+          type=raw,value=latest,enable={{is_default_branch}}
           type=sha,format=long
 
     # One file at a time: bash -n parses only its first argument and treats the
@@ -78,6 +73,34 @@ jobs:
         load: true
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
+
+    # Read from the image rather than from the Dockerfile: apk resolves package
+    # versions at build time, so only the built image knows what it contains.
+    - name: Identify the packaged software
+      id: packages
+      run: |
+        set -euo pipefail
+        image=$(head -1 <<< "${{ steps.meta.outputs.tags }}")
+        docker run --rm --entrypoint apk "${image}" info -v 2>/dev/null \
+          | sort > "${RUNNER_TEMP}/packages.txt"
+
+        # apk prints <name>-<version>-r<pkgrel>. The [0-9] anchor is what keeps
+        # "dovecot" from matching dovecot-lmtpd and the other subpackages.
+        pkgver() {
+          local line
+          line=$(grep -m1 -E "^$1-[0-9]" "${RUNNER_TEMP}/packages.txt") || {
+            echo "::error::$1 is not installed in the image"
+            exit 1
+          }
+          line=${line#"$1"-}
+          printf '%s' "${line%-r*}"
+        }
+
+        {
+          echo "dovecot=$(pkgver dovecot)"
+          echo "postfix=$(pkgver postfix)"
+          echo "alpine=$(pkgver alpine-release)"
+        } >> "${GITHUB_OUTPUT}"
 
     - name: Start the image and wait for it to report healthy
       run: |
@@ -124,11 +147,99 @@ jobs:
           exit 1
         fi
 
-    - name: Push image
+    # The version names what the image contains and when it was built, so it can
+    # be minted without anyone deciding anything. It is applied to the image
+    # that was just tested with docker tag rather than a second build, so what
+    # is published is the very thing the smoke test approved.
+    #
+    # Default branch only: a manual run from a side branch would otherwise mint
+    # a version outranking every build on main and deploy unmerged work.
+    - name: Derive the version from the packaged software
+      id: version
+      if: github.ref == 'refs/heads/main'
+      env:
+        REPOSITORY: ${{ env.CONTAINER_REGISTRY }}/${{ github.repository }}
+        DOVECOT: ${{ steps.packages.outputs.dovecot }}
+        POSTFIX: ${{ steps.packages.outputs.postfix }}
+        ALPINE: ${{ steps.packages.outputs.alpine }}
       run: |
         set -euo pipefail
-        while read -r tag; do
-          if [ -n "${tag}" ]; then
-            docker push "${tag}"
-          fi
-        done <<< "${{ steps.meta.outputs.tags }}"
+        image=$(head -1 <<< "${{ steps.meta.outputs.tags }}")
+
+        # What actually went into this image: the tree, the resolved packages
+        # and the suffix list fetched during the build. Anything else fetched at
+        # build time in future belongs here too, or a rebuild that mattered
+        # would be mistaken for a repeat of the one before it.
+        psl=$(docker run --rm --entrypoint sha256sum "${image}" \
+                /etc/opendmarc/public_suffix_list.dat)
+        fingerprint=fp-$(printf '%s\n%s\n%s\n' \
+          "$(git rev-parse 'HEAD^{tree}')" \
+          "$(cat "${RUNNER_TEMP}/packages.txt")" \
+          "${psl}" | sha256sum | cut -c1-12)
+
+        known=false
+        if docker buildx imagetools inspect "${REPOSITORY}:${fingerprint}" > /dev/null 2>&1; then
+          known=true
+        fi
+
+        # Only the weekly rebuild is skipped this way. Skipping a push would
+        # mean a commit reverting the tree to an earlier state published
+        # nothing, leaving the cluster on the image being reverted away from.
+        if [ "${known}" = true ] && [ "${GITHUB_EVENT_NAME}" = schedule ]; then
+          echo "::notice title=No new version::Byte for byte the mail server already published as ${fingerprint}. The moving tags follow this build; no version is published and no deployment pull request opens."
+          exit 0
+        fi
+
+        # Seconds rather than minutes: Flux keys its filtered tags by the
+        # extracted ordering value, and two tags sharing one silently shadow
+        # each other.
+        tag="dovecot${DOVECOT}-postfix${POSTFIX}-alpine${ALPINE}-b$(date --utc +%Y%m%d%H%M%S)"
+
+        # A republished version stops naming one fixed image, and every
+        # rollback target that names it stops being reproducible.
+        if docker buildx imagetools inspect "${REPOSITORY}:${tag}" > /dev/null 2>&1; then
+          echo "::error title=Version already published::${tag} exists; refusing to overwrite it."
+          exit 1
+        fi
+
+        docker tag "${image}" "${REPOSITORY}:${tag}"
+        published="${REPOSITORY}:${tag}"
+        if [ "${known}" != true ]; then
+          docker tag "${image}" "${REPOSITORY}:${fingerprint}"
+          published=$(printf '%s\n%s' "${published}" "${REPOSITORY}:${fingerprint}")
+        fi
+
+        {
+          echo 'tags<<TAGS_EOF'
+          echo "${published}"
+          echo 'TAGS_EOF'
+        } >> "${GITHUB_OUTPUT}"
+
+        {
+          echo "### \`${tag}\`"
+          echo
+          echo "Ordering key \`${tag##*-b}\`, content \`${fingerprint}\`"
+          echo
+          echo '<details><summary>installed packages</summary>'
+          echo
+          echo '```'
+          cat "${RUNNER_TEMP}/packages.txt"
+          echo '```'
+          echo
+          echo '</details>'
+        } >> "${GITHUB_STEP_SUMMARY}"
+
+    - name: Push image
+      env:
+        TAGS: |
+          ${{ steps.meta.outputs.tags }}
+          ${{ steps.version.outputs.tags }}
+      # Unquoted on purpose: the tag lists arrive as multi-line values whose
+      # continuation lines carry whatever indentation YAML gave them, and word
+      # splitting discards that along with the blank lines. Tags never contain
+      # whitespace, so there is nothing to preserve.
+      run: |
+        set -euo pipefail
+        for tag in ${TAGS}; do
+          docker push "${tag}"
+        done
