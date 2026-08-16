@@ -47,10 +47,10 @@ postconf -e mynetworks="127.0.0.0/8, [::1]/128"
 # its default of permit_mynetworks first, which reintroduces the trust above.
 postconf -e smtpd_relay_restrictions="permit_sasl_authenticated, reject_unauth_destination"
 
-postconf -e smtpd_recipient_restrictions="permit_sasl_authenticated, reject_non_fqdn_recipient, reject_unknown_client_hostname, reject_unauth_destination, permit"
-postconf -e smtpd_sender_restrictions="permit_sasl_authenticated, reject_non_fqdn_sender, reject_unknown_client_hostname, permit"
+postconf -e smtpd_recipient_restrictions="permit_sasl_authenticated, reject_non_fqdn_recipient, reject_unknown_reverse_client_hostname, reject_unauth_destination, permit"
+postconf -e smtpd_sender_restrictions="permit_sasl_authenticated, reject_non_fqdn_sender, reject_unknown_reverse_client_hostname, permit"
 postconf -e smtpd_helo_required="yes"
-postconf -e smtpd_helo_restrictions="permit_sasl_authenticated, reject_invalid_helo_hostname, reject_non_fqdn_helo_hostname, reject_unknown_helo_hostname, reject_unknown_client_hostname, permit"
+postconf -e smtpd_helo_restrictions="permit_sasl_authenticated, reject_invalid_helo_hostname, reject_non_fqdn_helo_hostname, permit"
 
 postconf -e smtputf8_enable="no"
 
