@@ -55,10 +55,63 @@ jobs:
           type=raw,value=latest,enable=${{ startsWith(github.ref, 'refs/tags/v') }}
           type=sha,format=long
 
-    - name: Build and push image
+    - name: Check the shell scripts
+      run: bash -n entrypoint.sh healthcheck.sh
+
+    # Loaded rather than pushed, so that what gets tested below is the very
+    # image that gets published, not a second build of the same source.
+    - name: Build image
       uses: docker/build-push-action@v7
       with:
         context: .
-        push: true
+        load: true
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
+
+    - name: Start the image and wait for it to report healthy
+      run: |
+        set -euo pipefail
+        image=$(head -1 <<< "${{ steps.meta.outputs.tags }}")
+
+        mkdir -p smoke/tls smoke/dkim/example.test
+        openssl req -x509 -newkey rsa:2048 -nodes -days 1 \
+          -subj /CN=mail.example.test \
+          -keyout smoke/tls/server.key -out smoke/tls/server.crt
+        openssl genrsa -out smoke/dkim/example.test/default.private 2048
+
+        docker run --detach --name smoke \
+          --env MAIL_DOMAINS=example.test \
+          --env MAIL_HOST=mail.example.test \
+          --env USERNAME=smoke \
+          --env PASSWORD=smoke-password \
+          --volume "${PWD}/smoke/tls:/tls:ro" \
+          --volume "${PWD}/smoke/dkim:/etc/opendkim/keys:ro" \
+          "${image}"
+
+        for _ in $(seq 60); do
+          if docker exec smoke /healthcheck.sh; then
+            exit 0
+          fi
+          sleep 2
+        done
+
+        echo "the image never became healthy"
+        docker logs smoke
+        exit 1
+
+    # The mailbox password used to have a built-in default, so a deployment
+    # that forgot to set one silently published a guessable account.
+    - name: Check that incomplete configuration is refused
+      run: |
+        if docker run --rm --env MAIL_DOMAINS=example.test --env USERNAME=smoke \
+             $(head -1 <<< "${{ steps.meta.outputs.tags }}"); then
+          echo "the image started without a password"
+          exit 1
+        fi
+
+    - name: Push image
+      run: |
+        set -euo pipefail
+        while read -r tag; do
+          [ -n "${tag}" ] && docker push "${tag}"
+        done <<< "${{ steps.meta.outputs.tags }}"
