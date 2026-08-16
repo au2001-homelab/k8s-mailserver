@@ -40,6 +40,21 @@ done
 
 # Postfix
 
+# The queue holds mail that has been accepted from the network but not yet
+# delivered, so it belongs on a volume rather than in the container. A freshly
+# provisioned volume arrives empty, and Postfix will not start without the
+# directory tree and the exact ownership and modes it expects, so let Postfix
+# build whatever is missing and then say whether it is satisfied.
+postfix post-install create-missing
+postfix check
+
+# Sockets and the pid file share the queue directory but describe the container
+# that last ran, not the mail. The pid file matters most: the health check and
+# the Kubernetes probes read it, and one left behind naming a pid that happens
+# to exist again in this container would read as a running Postfix.
+rm -f /var/spool/postfix/pid/master.pid
+find /var/spool/postfix/private /var/spool/postfix/public -type s -delete
+
 postconf -e myhostname="${MAIL_HOST}"
 postconf -e mydomain="${MAIL_DOMAINS[0]}"
 postconf -e myorigin="\$mydomain"
