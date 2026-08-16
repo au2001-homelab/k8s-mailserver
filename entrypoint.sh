@@ -38,7 +38,14 @@ postconf -e mydomain="${MAIL_DOMAINS[0]}"
 postconf -e myorigin="\$mydomain"
 postconf -e mydestination=""
 postconf -e virtual_mailbox_domains="${MAIL_DOMAINS[*]}"
-postconf -e mynetworks="127.0.0.0/8, [::1]/128, 10.0.0.0/8"
+# The client address comes from an unauthenticated PROXY protocol header, so
+# any peer able to reach the SMTP port can claim any address. Trusting the
+# cluster range here handed relay rights to every pod in the cluster.
+postconf -e mynetworks="127.0.0.0/8, [::1]/128"
+
+# Relay rights are granted by authentication alone. Left unset, Postfix applies
+# its default of permit_mynetworks first, which reintroduces the trust above.
+postconf -e smtpd_relay_restrictions="permit_sasl_authenticated, reject_unauth_destination"
 
 postconf -e smtpd_recipient_restrictions="permit_sasl_authenticated, reject_non_fqdn_recipient, reject_unknown_client_hostname, reject_unauth_destination, permit"
 postconf -e smtpd_sender_restrictions="permit_sasl_authenticated, reject_non_fqdn_sender, reject_unknown_client_hostname, permit"
