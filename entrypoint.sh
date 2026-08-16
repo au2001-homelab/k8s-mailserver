@@ -115,9 +115,14 @@ postconf -e smtp_tls_security_level="may"
 # Credentials, however, never travel in the clear.
 postconf -e smtpd_tls_auth_only="yes"
 
-postconf -e smtpd_tls_protocols=">=TLSv1.2"
+# Opportunistic sessions keep a permissive floor on purpose. There is no
+# renegotiation to something better when a handshake fails, only cleartext or a
+# bounce, so refusing old protocols here would lose mail rather than protect
+# it. Where TLS is actually required, which includes submission, the floor is
+# TLS 1.2 and a peer that cannot meet it is refused.
+postconf -e smtpd_tls_protocols="!SSLv2, !SSLv3"
+postconf -e smtp_tls_protocols="!SSLv2, !SSLv3"
 postconf -e smtpd_tls_mandatory_protocols=">=TLSv1.2"
-postconf -e smtp_tls_protocols=">=TLSv1.2"
 postconf -e smtp_tls_mandatory_protocols=">=TLSv1.2"
 
 # IMAP TLS
