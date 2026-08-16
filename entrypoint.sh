@@ -130,10 +130,10 @@ postconf -e smtp_tls_mandatory_protocols=">=TLSv1.2"
 # Written to its own file rather than appended to dovecot.conf, so that running
 # the entrypoint twice against the same filesystem cannot stack up duplicates.
 cat > /etc/dovecot/local.conf <<EOF
-ssl              = required
-ssl_cert         = <${TLS_CRT_FILE}
-ssl_key          = <${TLS_KEY_FILE}
-ssl_min_protocol = TLSv1.2
+ssl                  = required
+ssl_server_cert_file = ${TLS_CRT_FILE}
+ssl_server_key_file  = ${TLS_KEY_FILE}
+ssl_min_protocol     = TLSv1.2
 EOF
 
 # DKIM

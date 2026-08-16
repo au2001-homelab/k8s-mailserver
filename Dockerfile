@@ -1,7 +1,9 @@
-# Alpine 3.21 is the last release shipping Dovecot 2.3. Dovecot 2.4 rejects the
-# configuration in this repository at startup, so this pin must not be raised
-# before dovecot.conf is migrated. Alpine 3.21 is supported until 2026-11-01.
-FROM alpine:3.21@sha256:48b0309ca019d89d40f670aa1bc06e426dc0931948452e8491e3d65087abc07d
+# Pinned by digest so a rebuild cannot move release underneath the
+# configuration. dovecot.conf is written against the Dovecot 2.4 series, which
+# this release ships; 2.3 and 2.4 reject each other's configuration outright,
+# so moving to a release carrying a different series means migrating that file
+# in the same commit.
+FROM alpine:3.24@sha256:28bd5fe8b56d1bd048e5babf5b10710ebe0bae67db86916198a6eec434943f8b
 LABEL maintainer="Aurélien GARNIER <me@arl.sh>"
 
 RUN apk add --no-cache \
