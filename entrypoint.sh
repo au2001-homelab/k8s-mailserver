@@ -114,8 +114,12 @@ postconf -e milter_default_action="accept"
 
 cat > /etc/opendkim/TrustedHosts <<EOF
 127.0.0.1
+::1
 localhost
 EOF
+
+> /etc/opendkim/KeyTable
+> /etc/opendkim/SigningTable
 
 for domain in "${MAIL_DOMAINS[@]}"; do
   cat >> /etc/opendkim/KeyTable <<EOF
@@ -126,7 +130,7 @@ EOF
 *@${domain} default._domainkey.${domain}
 EOF
 
-  cat > /etc/opendkim/TrustedHosts <<EOF
+  cat >> /etc/opendkim/TrustedHosts <<EOF
 ${domain}
 EOF
 done
