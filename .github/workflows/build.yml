@@ -60,7 +60,7 @@ jobs:
     # rest as positional parameters, so passing both checked only one of them.
     - name: Check the shell scripts
       run: |
-        for script in entrypoint.sh healthcheck.sh; do
+        for script in entrypoint.sh healthcheck.sh tls-reload.sh; do
           bash -n "${script}"
         done
 

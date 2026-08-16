@@ -39,7 +39,7 @@ COPY ./supervisord.conf /etc/supervisor/conf.d/
 COPY ./dovecot.conf /etc/dovecot/
 COPY ./opendkim.conf /etc/opendkim/
 COPY ./syslog-ng.conf /etc/syslog-ng/
-COPY ./entrypoint.sh ./healthcheck.sh /
+COPY ./entrypoint.sh ./healthcheck.sh ./tls-reload.sh /
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=90s --retries=3 \
   CMD /healthcheck.sh
