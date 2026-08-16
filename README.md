@@ -70,7 +70,7 @@ You will need to set this all up correctly, or you outgoing mail will silently b
 Every build of `main` publishes an immutable version naming what is inside it:
 
 ```
-dovecot2.3.21.1-postfix3.9.14-alpine3.21.7-b20260816184325
+dovecot2.4.4-postfix3.11.6-alpine3.24.1-b20260816184325
 ```
 
 The trailing component is a UTC timestamp, used for ordering.\
