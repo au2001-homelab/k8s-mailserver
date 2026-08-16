@@ -40,7 +40,12 @@ COPY ./opendkim.conf /etc/opendkim/
 COPY ./syslog-ng.conf /etc/syslog-ng/
 
 COPY ./entrypoint.sh /
-RUN chmod +x /entrypoint.sh
+COPY ./healthcheck.sh /
+RUN chmod +x /entrypoint.sh /healthcheck.sh
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=90s --retries=3 \
+  CMD /healthcheck.sh
+
 ENTRYPOINT ["/entrypoint.sh"]
 
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
