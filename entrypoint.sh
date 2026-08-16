@@ -176,10 +176,13 @@ mkdir -p /var/lib/dovecot/sieve/before.d/
 mkdir -p /var/lib/dovecot/sieve/after.d/
 
 cat > /var/lib/dovecot/sieve/after.d/opendmarc.sieve <<EOF
-require ["fileinto"];
+require ["fileinto", "mailbox"];
 
-if header :matches "Authentication-Results" "*; dmarc=fail *" {
-  fileinto "Spam";
+# Anchored on this server's own authentication service identifier: an
+# Authentication-Results header is ordinary text until something vouches for
+# it, and unanchored the sender could supply one and pick its own verdict.
+if header :matches "Authentication-Results" "${MAIL_HOST};*dmarc=fail*" {
+  fileinto :create "Spam";
   stop;
 }
 EOF
