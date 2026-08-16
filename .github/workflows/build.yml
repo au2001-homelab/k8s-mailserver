@@ -61,8 +61,13 @@ jobs:
           type=raw,value=latest,enable=${{ startsWith(github.ref, 'refs/tags/v') }}
           type=sha,format=long
 
+    # One file at a time: bash -n parses only its first argument and treats the
+    # rest as positional parameters, so passing both checked only one of them.
     - name: Check the shell scripts
-      run: bash -n entrypoint.sh healthcheck.sh
+      run: |
+        for script in entrypoint.sh healthcheck.sh; do
+          bash -n "${script}"
+        done
 
     # Loaded rather than pushed, so that what gets tested below is the very
     # image that gets published, not a second build of the same source.
@@ -107,9 +112,13 @@ jobs:
 
     # The mailbox password used to have a built-in default, so a deployment
     # that forgot to set one silently published a guessable account.
+    # Bounded, because a regression here means the container starts and runs a
+    # mail server in the foreground: without the timeout the step would hang
+    # until the job hit its own limit hours later instead of failing.
     - name: Check that incomplete configuration is refused
       run: |
-        if docker run --rm --env MAIL_DOMAINS=example.test --env USERNAME=smoke \
+        if timeout 60 docker run --rm --env MAIL_DOMAINS=example.test \
+             --env USERNAME=smoke \
              $(head -1 <<< "${{ steps.meta.outputs.tags }}"); then
           echo "the image started without a password"
           exit 1
