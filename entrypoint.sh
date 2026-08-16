@@ -90,26 +90,32 @@ EOF
 
 # SMTP TLS
 
-if [[ -f "${TLS_CRT_FILE}" && -f "${TLS_KEY_FILE}" ]]; then
-  postconf -e smtp_tls_security_level=may
-  postconf -e smtpd_tls_security_level=may
-  postconf -e smtpd_tls_cert_file=${TLS_CRT_FILE}
-  postconf -e smtpd_tls_key_file=${TLS_KEY_FILE}
-fi
+postconf -e smtpd_tls_cert_file="${TLS_CRT_FILE}"
+postconf -e smtpd_tls_key_file="${TLS_KEY_FILE}"
+
+# Opportunistic in both directions: a public MX has to keep accepting cleartext
+# from senders that cannot negotiate TLS, and has to keep delivering to them.
+postconf -e smtpd_tls_security_level="may"
+postconf -e smtp_tls_security_level="may"
+
+# Credentials, however, never travel in the clear.
+postconf -e smtpd_tls_auth_only="yes"
+
+postconf -e smtpd_tls_protocols=">=TLSv1.2"
+postconf -e smtpd_tls_mandatory_protocols=">=TLSv1.2"
+postconf -e smtp_tls_protocols=">=TLSv1.2"
+postconf -e smtp_tls_mandatory_protocols=">=TLSv1.2"
 
 # IMAP TLS
 
-if [[ -f "${TLS_CRT_FILE}" && -f "${TLS_KEY_FILE}" ]]; then
-  cat >> /etc/dovecot/dovecot.conf <<EOF
-ssl      = required
-ssl_cert = <${TLS_CRT_FILE}
-ssl_key  = <${TLS_KEY_FILE}
+# Written to its own file rather than appended to dovecot.conf, so that running
+# the entrypoint twice against the same filesystem cannot stack up duplicates.
+cat > /etc/dovecot/local.conf <<EOF
+ssl              = required
+ssl_cert         = <${TLS_CRT_FILE}
+ssl_key          = <${TLS_KEY_FILE}
+ssl_min_protocol = TLSv1.2
 EOF
-else
-  cat >> /etc/dovecot/dovecot.conf <<EOF
-ssl = no
-EOF
-fi
 
 # DKIM
 
