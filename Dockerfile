@@ -4,20 +4,24 @@
 FROM alpine:3.21@sha256:48b0309ca019d89d40f670aa1bc06e426dc0931948452e8491e3d65087abc07d
 LABEL maintainer="Aurélien GARNIER <me@arl.sh>"
 
-RUN apk add --update --upgrade --no-cache bash
-RUN apk add --update --upgrade --no-cache supervisor syslog-ng
-RUN apk add --update --upgrade --no-cache postfix
-RUN apk add --update --upgrade --no-cache dovecot dovecot-pop3d dovecot-lmtpd
-RUN apk add --update --upgrade --no-cache opendkim opendmarc
-RUN apk add --update --upgrade --no-cache dovecot-pigeonhole-plugin
-RUN rm -rf /etc/apk/cache
+RUN apk add --no-cache \
+      bash \
+      ca-certificates \
+      dovecot \
+      dovecot-lmtpd \
+      dovecot-pigeonhole-plugin \
+      dovecot-pop3d \
+      opendkim \
+      opendmarc \
+      postfix \
+      supervisor \
+      syslog-ng
 
 # OpenDMARC derives organizational domains from a public suffix list. Without
 # one it only ever queries the From domain itself, so a policy published at
 # example.com is never found for mail claiming to be from sub.example.com and
 # the spoof is reported as dmarc=none. No Alpine package ships the list.
-RUN apk add --update --upgrade --no-cache ca-certificates \
- && mkdir -p /etc/opendmarc \
+RUN mkdir -p /etc/opendmarc \
  && wget -qO /etc/opendmarc/public_suffix_list.dat \
       https://publicsuffix.org/list/public_suffix_list.dat \
  && grep -q '^// ===BEGIN ICANN DOMAINS===' /etc/opendmarc/public_suffix_list.dat
@@ -28,20 +32,14 @@ RUN apk add --update --upgrade --no-cache ca-certificates \
 # persistent volume is owned by that id, and any other value would lock the
 # server out of the existing mail.
 RUN adduser -S -D -H -h /var/mail -s /sbin/nologin -G mail -u 14 postmaster \
- && [ "$(id -u postmaster)" = "14" ]
-
-RUN mkdir -p /etc/sasl2
-RUN mkdir -p /tls
+ && [ "$(id -u postmaster)" = "14" ] \
+ && mkdir -p /tls
 
 COPY ./supervisord.conf /etc/supervisor/conf.d/
-COPY ./sasl.conf /etc/postfix/sasl/smtpd.conf
 COPY ./dovecot.conf /etc/dovecot/
 COPY ./opendkim.conf /etc/opendkim/
 COPY ./syslog-ng.conf /etc/syslog-ng/
-
-COPY ./entrypoint.sh /
-COPY ./healthcheck.sh /
-RUN chmod +x /entrypoint.sh /healthcheck.sh
+COPY ./entrypoint.sh ./healthcheck.sh /
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=90s --retries=3 \
   CMD /healthcheck.sh
