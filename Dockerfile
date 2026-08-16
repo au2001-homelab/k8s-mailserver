@@ -1,4 +1,7 @@
-FROM alpine:latest
+# Alpine 3.21 is the last release shipping Dovecot 2.3. Dovecot 2.4 rejects the
+# configuration in this repository at startup, so this pin must not be raised
+# before dovecot.conf is migrated. Alpine 3.21 is supported until 2026-11-01.
+FROM alpine:3.21@sha256:48b0309ca019d89d40f670aa1bc06e426dc0931948452e8491e3d65087abc07d
 LABEL maintainer="Aurélien GARNIER <me@arl.sh>"
 
 RUN apk add --update --upgrade --no-cache bash
