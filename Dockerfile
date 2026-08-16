@@ -22,6 +22,14 @@ RUN apk add --update --upgrade --no-cache ca-certificates \
       https://publicsuffix.org/list/public_suffix_list.dat \
  && grep -q '^// ===BEGIN ICANN DOMAINS===' /etc/opendmarc/public_suffix_list.dat
 
+# Alpine carried a legacy postmaster account in its base layout up to 3.19 and
+# dropped it afterwards. Dovecot owns the mail store as that user, so without it
+# Dovecot refuses to start. It has to keep uid 14: every message already on the
+# persistent volume is owned by that id, and any other value would lock the
+# server out of the existing mail.
+RUN adduser -S -D -H -h /var/mail -s /sbin/nologin -G mail -u 14 postmaster \
+ && [ "$(id -u postmaster)" = "14" ]
+
 RUN mkdir -p /etc/sasl2
 RUN mkdir -p /tls
 
