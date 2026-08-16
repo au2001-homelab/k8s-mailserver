@@ -95,8 +95,6 @@ if [[ -f "${TLS_CRT_FILE}" && -f "${TLS_KEY_FILE}" ]]; then
   postconf -e smtpd_tls_security_level=may
   postconf -e smtpd_tls_cert_file=${TLS_CRT_FILE}
   postconf -e smtpd_tls_key_file=${TLS_KEY_FILE}
-
-  postconf -Me smtps/inet="smtps inet n - - - - smtpd -o smtpd_tls_wrappermode=yes"
 fi
 
 # IMAP TLS
@@ -178,7 +176,6 @@ sievec /var/lib/dovecot/sieve/after.d/
 # Proxy Protocol
 
 postconf -M# smtp/inet
-postconf -M# smtps/inet
 postconf -Me 10025/inet="10025 inet n - - - 1 postscreen"
 postconf -Me smtpd/pass="smtpd pass - - - - - smtpd"
 
