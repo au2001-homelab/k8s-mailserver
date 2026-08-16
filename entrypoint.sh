@@ -196,6 +196,12 @@ postconf -Me smtpd/pass="smtpd pass - - - - - smtpd"
 postconf -e postscreen_upstream_proxy_protocol="haproxy"
 postconf -e postscreen_access_list="permit_mynetworks"
 
+# Pregreeting, that is talking before the banner arrives, is something only
+# bulk senders do, so it is safe to act on. The DNS block lists postscreen can
+# also consult are left off deliberately: they answer from the resolver's
+# address, and a resolver a list has itself blocked would refuse real mail.
+postconf -e postscreen_greet_action="enforce"
+
 # Submission gets its own service rather than sharing the MX port. Mail clients
 # have no business passing through postscreen, which exists to screen MX
 # traffic, and submission demands what the MX cannot: mandatory TLS,
