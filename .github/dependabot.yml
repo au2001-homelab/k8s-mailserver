@@ -1,0 +1,21 @@
+version: 2
+
+updates:
+- package-ecosystem: github-actions
+  directory: /
+  schedule:
+    interval: weekly
+
+- package-ecosystem: docker
+  directory: /
+  schedule:
+    interval: weekly
+  # Digest and patch bumps within the pinned Alpine release are wanted, since
+  # that is how package fixes arrive. Moving off 3.21 is not: later releases
+  # ship Dovecot 2.4, which rejects this configuration outright, so that has to
+  # stay a deliberate migration rather than an automated pull request.
+  ignore:
+  - dependency-name: alpine
+    update-types:
+    - version-update:semver-major
+    - version-update:semver-minor
