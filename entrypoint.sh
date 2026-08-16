@@ -85,6 +85,11 @@ postconf -e broken_sasl_auth_clients="yes"
 postconf -e smtpd_sasl_type="dovecot"
 postconf -e smtpd_sasl_path="private/auth"
 
+# Dovecot delivers as postmaster, but a freshly provisioned volume arrives
+# owned by root with no group write, so without this every delivery fails to
+# create the mailbox and mail sits in the queue until it bounces.
+install -d -o postmaster -g root -m 0750 /var/spool/mail/vhosts
+
 CRYPT_PASSWORD=`doveadm pw -p "${PASSWORD}"`
 
 cat > /etc/dovecot/passwd <<EOF
