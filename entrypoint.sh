@@ -1,11 +1,35 @@
 #!/bin/bash
 
+set -euo pipefail
+
 # Variables
 
-MAIL_DOMAINS=(${MAIL_DOMAINS:=example.com})
+# Refuse to start rather than fall back to defaults: this server is reachable
+# from the internet, so a mistyped or empty variable used to silently publish a
+# mailbox with a well-known password. The :? form also rejects empty values.
+: "${MAIL_DOMAINS:?is required, e.g. \"example.com example.net\"}"
+: "${USERNAME:?is required}"
+: "${PASSWORD:?is required}"
+
+MAIL_DOMAINS=(${MAIL_DOMAINS})
 MAIL_HOST=${MAIL_HOST:-${MAIL_DOMAINS[0]}}
-USERNAME=${USERNAME:=user}
-PASSWORD=${PASSWORD:=Password123}
+
+TLS_CRT_FILE=/tls/server.crt
+TLS_KEY_FILE=/tls/server.key
+
+for file in "${TLS_CRT_FILE}" "${TLS_KEY_FILE}"; do
+  if [[ ! -f "${file}" ]]; then
+    echo "${file} is missing: refusing to serve mail without TLS." >&2
+    exit 1
+  fi
+done
+
+for domain in "${MAIL_DOMAINS[@]}"; do
+  if [[ ! -f "/etc/opendkim/keys/${domain}/default.private" ]]; then
+    echo "DKIM key for ${domain} is missing: outbound mail would be rejected." >&2
+    exit 1
+  fi
+done
 
 # Postfix
 
@@ -58,9 +82,6 @@ ${USERNAME}@${MAIL_DOMAINS[0]}:${CRYPT_PASSWORD}
 EOF
 
 # SMTP TLS
-
-TLS_CRT_FILE=/tls/server.crt
-TLS_KEY_FILE=/tls/server.key
 
 if [[ -f "${TLS_CRT_FILE}" && -f "${TLS_KEY_FILE}" ]]; then
   postconf -e smtp_tls_security_level=may
