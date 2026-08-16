@@ -14,6 +14,13 @@ set -euo pipefail
 MAIL_DOMAINS=(${MAIL_DOMAINS})
 MAIL_HOST=${MAIL_HOST:-${MAIL_DOMAINS[0]}}
 
+# The selector names the DNS record that carries the public key. It is a
+# variable so that a key can be replaced without an interruption: publish the
+# new selector, point the server at it, then retire the old record. With the
+# selector fixed, replacing a key means a window where what is signing and what
+# is published disagree, and mail fails DMARC for the length of it.
+DKIM_SELECTOR=${DKIM_SELECTOR:-default}
+
 TLS_CRT_FILE=/tls/server.crt
 TLS_KEY_FILE=/tls/server.key
 
@@ -25,7 +32,7 @@ for file in "${TLS_CRT_FILE}" "${TLS_KEY_FILE}"; do
 done
 
 for domain in "${MAIL_DOMAINS[@]}"; do
-  if [[ ! -f "/etc/opendkim/keys/${domain}/default.private" ]]; then
+  if [[ ! -f "/etc/opendkim/keys/${domain}/${DKIM_SELECTOR}.private" ]]; then
     echo "DKIM key for ${domain} is missing: outbound mail would be rejected." >&2
     exit 1
   fi
@@ -141,11 +148,11 @@ EOF
 
 for domain in "${MAIL_DOMAINS[@]}"; do
   cat >> /etc/opendkim/KeyTable <<EOF
-default._domainkey.${domain} ${domain}:default:/etc/opendkim/keys/${domain}/default.private
+${DKIM_SELECTOR}._domainkey.${domain} ${domain}:${DKIM_SELECTOR}:/etc/opendkim/keys/${domain}/${DKIM_SELECTOR}.private
 EOF
 
   cat >> /etc/opendkim/SigningTable <<EOF
-*@${domain} default._domainkey.${domain}
+*@${domain} ${DKIM_SELECTOR}._domainkey.${domain}
 EOF
 
   cat >> /etc/opendkim/TrustedHosts <<EOF
