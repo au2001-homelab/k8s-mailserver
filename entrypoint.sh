@@ -143,10 +143,12 @@ cat > /etc/opendmarc.conf <<EOF
 AuthservID                 ${MAIL_HOST}
 TrustedAuthservIDs         ${MAIL_HOST}
 IgnoreAuthenticatedClients true
+PublicSuffixList           /etc/opendmarc/public_suffix_list.dat
 RequiredHeaders            true
 SPFIgnoreResults           true
 SPFSelfValidate            true
 Socket                     unix:/var/spool/postfix/private/opendmarc
+Syslog                     true
 UMask                      0660
 UserID                     root:postfix
 EOF

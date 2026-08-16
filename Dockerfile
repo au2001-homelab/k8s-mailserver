@@ -12,6 +12,16 @@ RUN apk add --update --upgrade --no-cache opendkim opendmarc
 RUN apk add --update --upgrade --no-cache dovecot-pigeonhole-plugin
 RUN rm -rf /etc/apk/cache
 
+# OpenDMARC derives organizational domains from a public suffix list. Without
+# one it only ever queries the From domain itself, so a policy published at
+# example.com is never found for mail claiming to be from sub.example.com and
+# the spoof is reported as dmarc=none. No Alpine package ships the list.
+RUN apk add --update --upgrade --no-cache ca-certificates \
+ && mkdir -p /etc/opendmarc \
+ && wget -qO /etc/opendmarc/public_suffix_list.dat \
+      https://publicsuffix.org/list/public_suffix_list.dat \
+ && grep -q '^// ===BEGIN ICANN DOMAINS===' /etc/opendmarc/public_suffix_list.dat
+
 RUN mkdir -p /etc/sasl2
 RUN mkdir -p /tls
 
