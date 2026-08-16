@@ -7,6 +7,12 @@ on:
   push:
     branches: main
     tags: v[0-9]+.[0-9]+.[0-9]+
+  # Alpine keeps issuing package fixes for a pinned release, and this image sat
+  # unrebuilt for two and a half years. A weekly run keeps edge patched and, as
+  # it starts what it builds, says whether the tree still produces a working
+  # mail server even when nobody has touched it.
+  schedule:
+  - cron: 0 4 * * 1
   workflow_dispatch:
 
 env:
