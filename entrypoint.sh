@@ -61,7 +61,6 @@ postconf -e smtpd_banner="${MAIL_HOST} ESMTP"
 postconf -e smtp_header_checks="regexp:/etc/postfix/header_checks"
 cat > /etc/postfix/header_checks <<EOF
 /^Received:/ IGNORE
-/^From:/     PREPEND List-Unsubscribe: <mailto:unsubscribe@${MAIL_DOMAINS[0]}>
 EOF
 
 postconf -e virtual_alias_maps="lmdb:/etc/postfix/aliases"
