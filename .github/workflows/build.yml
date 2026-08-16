@@ -119,5 +119,7 @@ jobs:
       run: |
         set -euo pipefail
         while read -r tag; do
-          [ -n "${tag}" ] && docker push "${tag}"
+          if [ -n "${tag}" ]; then
+            docker push "${tag}"
+          fi
         done <<< "${{ steps.meta.outputs.tags }}"
