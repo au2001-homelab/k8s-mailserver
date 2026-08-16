@@ -77,7 +77,10 @@ postmap lmdb:/etc/postfix/aliases
 
 postconf -e virtual_transport="lmtp:unix:private/dovecot-lmtp"
 
-postconf -e smtpd_sasl_auth_enable="yes"
+# Authentication is offered by the submission service alone. The MX must not
+# advertise it: that is what exposed the mailbox password to the credential
+# stuffing every public port 25 receives.
+postconf -e smtpd_sasl_auth_enable="no"
 postconf -e broken_sasl_auth_clients="yes"
 postconf -e smtpd_sasl_type="dovecot"
 postconf -e smtpd_sasl_path="private/auth"
@@ -187,6 +190,13 @@ postconf -Me smtpd/pass="smtpd pass - - - - - smtpd"
 
 postconf -e postscreen_upstream_proxy_protocol="haproxy"
 postconf -e postscreen_access_list="permit_mynetworks"
+
+# Submission gets its own service rather than sharing the MX port. Mail clients
+# have no business passing through postscreen, which exists to screen MX
+# traffic, and submission demands what the MX cannot: mandatory TLS,
+# authentication for every message, and no HELO policy, since mail clients
+# routinely greet with an unqualified laptop name.
+postconf -Me 10587/inet="10587 inet n - - - - smtpd -o syslog_name=postfix/submission -o smtpd_upstream_proxy_protocol=haproxy -o smtpd_tls_security_level=encrypt -o smtpd_sasl_auth_enable=yes -o smtpd_client_restrictions=permit_sasl_authenticated,reject -o smtpd_relay_restrictions=permit_sasl_authenticated,reject -o smtpd_recipient_restrictions=permit_sasl_authenticated,reject -o smtpd_sender_restrictions=permit_sasl_authenticated,reject -o smtpd_helo_restrictions="
 
 # Custom configuration
 
