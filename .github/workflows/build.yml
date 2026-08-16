@@ -8,28 +8,36 @@ on:
 env:
   CONTAINER_REGISTRY: ghcr.io
 
+# The token may publish packages and read this repository, nothing more.
+permissions:
+  contents: read
+  packages: write
+
+# Two runs finishing out of order could leave a tag pointing at the older
+# commit, so let a newer run supersede one still in progress.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
-      uses: actions/checkout@v3
-
-    - name: Set up QEMU
-      uses: docker/setup-qemu-action@v2
+      uses: actions/checkout@v7
 
     - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v2
+      uses: docker/setup-buildx-action@v4
 
     - name: Login to GitHub Container Registry
-      uses: docker/login-action@v2
+      uses: docker/login-action@v4
       with:
         registry: ${{ env.CONTAINER_REGISTRY }}
         username: ${{ github.repository_owner }}
         password: ${{ github.token }}
 
     - name: Build and push image
-      uses: docker/build-push-action@v2
+      uses: docker/build-push-action@v7
       with:
         context: .
         push: true
